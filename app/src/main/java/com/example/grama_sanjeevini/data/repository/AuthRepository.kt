@@ -1,4 +1,5 @@
-//
+package com.example.grama_sanjeevini.data.repository
+
 //suspend fun sendOtp(phone: String) { /* Firebase Phone Auth */ }
 //suspend fun verifyOtp(verificationId: String, code: String): FirebaseUser?
 //suspend fun saveUser(uid: String, name: String, phone: String, role: String) {
