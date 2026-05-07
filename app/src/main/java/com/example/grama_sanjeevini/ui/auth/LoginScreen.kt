@@ -23,16 +23,15 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.grama_sanjeevini.R
+import com.example.grama_sanjeevini.constants.theme.Poppins
 import com.example.grama_sanjeevini.viewmodel.UserRole
-
-private val GreenPrimary = Color(0xFF1B5E20)
-private val GreenLight   = Color(0xFFE8F5E9)
 
 @Composable
 fun LoginScreen(
     onNavigateToOtp: (phone: String, role: UserRole) -> Unit,
     onNavigateToRegister: () -> Unit
 ) {
+    val cs = MaterialTheme.colorScheme
     var selectedRole by remember { mutableStateOf(UserRole.CUSTOMER) }
     var phone        by remember { mutableStateOf("") }
     var phoneError   by remember { mutableStateOf("") }
@@ -41,11 +40,11 @@ fun LoginScreen(
 
     Column(modifier = Modifier.fillMaxSize()) {
 
-        // ── Green header (fixed, doesn't scroll) ──────────────────
+        // ── Gradient header ───────────────────────────────────────
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(GreenPrimary)
+                .background(cs.primaryContainer)
                 .padding(top = 56.dp, bottom = 32.dp),
             contentAlignment = Alignment.Center
         ) {
@@ -61,39 +60,43 @@ fun LoginScreen(
                     "GramaSanjeevini",
                     color = Color.White,
                     fontSize = 22.sp,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = Poppins
                 )
                 Text(
                     "VILLAGE PHARMACY NETWORK",
                     color = Color.White.copy(alpha = 0.6f),
                     fontSize = 10.sp,
-                    letterSpacing = 1.5.sp
+                    letterSpacing = 1.5.sp,
+                    fontFamily = Poppins
                 )
             }
         }
 
-        // ── Scrollable white card ─────────────────────────────────
+        // ── Scrollable card ──────────────────────────────────────
         Surface(
             modifier = Modifier.fillMaxSize(),
             shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-            color = MaterialTheme.colorScheme.background
+            color = cs.background
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .verticalScroll(scrollState)        // ← scrollable
+                    .verticalScroll(scrollState)
                     .padding(horizontal = 24.dp, vertical = 32.dp)
             ) {
                 Text(
                     "Welcome back",
                     fontSize = 22.sp,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground
+                    color = cs.onBackground,
+                    fontFamily = Poppins
                 )
                 Text(
                     "Sign in to your account",
                     fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f)
+                    color = cs.onBackground.copy(alpha = 0.5f),
+                    fontFamily = Poppins
                 )
 
                 Spacer(Modifier.height(28.dp))
@@ -103,12 +106,13 @@ fun LoginScreen(
                     "I AM A",
                     fontSize = 11.sp,
                     letterSpacing = 1.sp,
-                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f)
+                    color = cs.onBackground.copy(alpha = 0.5f),
+                    fontFamily = Poppins
                 )
                 Spacer(Modifier.height(10.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     UserRole.entries.forEach { role ->
-                        RoleChip(
+                        LoginRoleChip(
                             role = role,
                             isSelected = selectedRole == role,
                             modifier = Modifier.weight(1f),
@@ -124,7 +128,8 @@ fun LoginScreen(
                     "MOBILE NUMBER",
                     fontSize = 11.sp,
                     letterSpacing = 1.sp,
-                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f)
+                    color = cs.onBackground.copy(alpha = 0.5f),
+                    fontFamily = Poppins
                 )
                 Spacer(Modifier.height(8.dp))
                 OutlinedTextField(
@@ -136,24 +141,25 @@ fun LoginScreen(
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text("10-digit number") },
+                    placeholder = { Text("10-digit number", fontFamily = Poppins) },
                     prefix = {
                         Text(
                             "+91  ",
-                            color = MaterialTheme.colorScheme.onBackground,
-                            fontWeight = FontWeight.Medium
+                            color = cs.onBackground,
+                            fontWeight = FontWeight.Medium,
+                            fontFamily = Poppins
                         )
                     },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     singleLine = true,
                     isError = phoneError.isNotEmpty(),
                     supportingText = if (phoneError.isNotEmpty()) {
-                        { Text(phoneError, color = MaterialTheme.colorScheme.error) }
+                        { Text(phoneError, color = cs.error, fontFamily = Poppins) }
                     } else null,
                     shape = RoundedCornerShape(12.dp),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = GreenPrimary,
-                        unfocusedBorderColor = Color.Gray.copy(alpha = 0.3f)
+                        focusedBorderColor = cs.primary,
+                        unfocusedBorderColor = cs.onBackground.copy(alpha = 0.25f)
                     )
                 )
 
@@ -168,13 +174,12 @@ fun LoginScreen(
                             onNavigateToOtp(phone, selectedRole)
                         }
                     },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(52.dp),
+                    modifier = Modifier.fillMaxWidth().height(52.dp),
                     shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = GreenPrimary)
+                    colors = ButtonDefaults.buttonColors(containerColor = cs.primary)
                 ) {
-                    Text("Send OTP", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                    Text("Send OTP", fontSize = 16.sp, fontWeight = FontWeight.SemiBold,
+                        fontFamily = Poppins, color = cs.onPrimary)
                 }
 
                 Spacer(Modifier.height(20.dp))
@@ -188,7 +193,8 @@ fun LoginScreen(
                     Text(
                         "  OR  ",
                         fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.4f)
+                        color = cs.onBackground.copy(alpha = 0.4f),
+                        fontFamily = Poppins
                     )
                     HorizontalDivider(modifier = Modifier.weight(1f))
                 }
@@ -198,19 +204,16 @@ fun LoginScreen(
                 // New user button
                 OutlinedButton(
                     onClick = onNavigateToRegister,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(52.dp),
+                    modifier = Modifier.fillMaxWidth().height(52.dp),
                     shape = RoundedCornerShape(14.dp),
-                    border = androidx.compose.foundation.BorderStroke(
-                        1.dp, GreenPrimary
-                    )
+                    border = androidx.compose.foundation.BorderStroke(1.dp, cs.primary)
                 ) {
                     Text(
                         "New User? Create Account",
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Medium,
-                        color = GreenPrimary
+                        color = cs.primary,
+                        fontFamily = Poppins
                     )
                 }
 
@@ -219,9 +222,10 @@ fun LoginScreen(
                 Text(
                     "By continuing you agree to our Terms of Service",
                     fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.35f),
+                    color = cs.onBackground.copy(alpha = 0.35f),
                     textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    fontFamily = Poppins
                 )
             }
         }
@@ -229,21 +233,23 @@ fun LoginScreen(
 }
 
 @Composable
-private fun RoleChip(
+private fun LoginRoleChip(
     role: UserRole,
     isSelected: Boolean,
     modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
+    val cs = MaterialTheme.colorScheme
+
     val borderColor by animateColorAsState(
-        targetValue = if (isSelected) GreenPrimary else Color.Gray.copy(alpha = 0.3f),
+        targetValue = if (isSelected) cs.primary else cs.onBackground.copy(alpha = 0.25f),
         animationSpec = tween(200), label = "border"
     )
     val bgColor by animateColorAsState(
-        targetValue = if (isSelected) GreenLight else Color.Transparent,
+        targetValue = if (isSelected) cs.primary.copy(alpha = 0.08f) else Color.Transparent,
         animationSpec = tween(200), label = "bg"
     )
-    val contentColor = if (isSelected) GreenPrimary else Color.Gray
+    val contentColor = if (isSelected) cs.primary else cs.onBackground.copy(alpha = 0.5f)
 
     Column(
         modifier = modifier
@@ -272,7 +278,8 @@ private fun RoleChip(
             text = if (role == UserRole.CUSTOMER) "Customer" else "Pharmacist",
             fontSize = 13.sp,
             fontWeight = FontWeight.Medium,
-            color = contentColor
+            color = contentColor,
+            fontFamily = Poppins
         )
     }
 }

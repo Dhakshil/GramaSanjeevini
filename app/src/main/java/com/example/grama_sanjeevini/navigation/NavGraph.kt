@@ -48,8 +48,11 @@ sealed class Screen(val route: String) {
 
 // ── Root NavGraph ──────────────────────────────────────────────────────────────
 @Composable
-fun NavGraph(navController: NavHostController) {
-
+fun NavGraph(
+    navController: NavHostController,
+    isDark: Boolean = false,
+    onToggleDarkMode: () -> Unit = {}
+) {
     val authViewModel: AuthViewModel = viewModel()
     val pharmacistViewModel: PharmacistViewModel = viewModel()
 
@@ -85,7 +88,7 @@ fun NavGraph(navController: NavHostController) {
             RegisterScreen(
                 onNavigateToOtp = { phone, role, name ->
                     authViewModel.setPendingName(name)
-                    authViewModel.resetState()          // ← clear stale UserNotFound state
+                    authViewModel.resetState()
                     navController.navigate(Screen.Otp.createRoute(phone, role.name, true))
                 },
                 onNavigateToLogin = { navController.popBackStack() }
@@ -100,7 +103,6 @@ fun NavGraph(navController: NavHostController) {
             )
             val isNewUser = backStackEntry.arguments?.getString("isNewUser").toBoolean()
 
-            // React to AuthViewModel state changes
             LaunchedEffect(authViewModel.authState) {
                 when (val state = authViewModel.authState) {
                     is AuthViewModel.AuthState.Success -> {
@@ -145,6 +147,8 @@ fun NavGraph(navController: NavHostController) {
             val homeViewModel: HomeViewModel = viewModel()
             CustomerMainScreen(
                 homeViewModel = homeViewModel,
+                isDark = isDark,
+                onToggleDarkMode = onToggleDarkMode,
                 onNavigateToLogin = {
                     navController.navigate(Screen.Login.route) {
                         popUpTo(0) { inclusive = true }
@@ -187,6 +191,8 @@ fun NavGraph(navController: NavHostController) {
 @Composable
 fun CustomerMainScreen(
     homeViewModel: HomeViewModel,
+    isDark: Boolean,
+    onToggleDarkMode: () -> Unit,
     onNavigateToLogin: () -> Unit,
     onNavigateToShop: (String) -> Unit
 ) {
@@ -228,7 +234,11 @@ fun CustomerMainScreen(
                 SearchScreen(viewModel = homeViewModel)
             }
             composable(Screen.Profile.route) {
-                ProfileScreen(onLogOut = onNavigateToLogin)
+                ProfileScreen(
+                    isDark = isDark,
+                    onToggleDarkMode = onToggleDarkMode,
+                    onLogOut = onNavigateToLogin
+                )
             }
         }
     }

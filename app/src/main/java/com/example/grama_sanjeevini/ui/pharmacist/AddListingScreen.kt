@@ -20,8 +20,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.grama_sanjeevini.constants.theme.PrimaryColor
-import com.example.grama_sanjeevini.constants.theme.PrimaryDark
+import com.example.grama_sanjeevini.constants.theme.*
 import com.example.grama_sanjeevini.data.model.Medicine
 import com.example.grama_sanjeevini.viewmodel.PharmacistViewModel
 import kotlinx.coroutines.launch
@@ -32,7 +31,9 @@ fun AddListingScreen(
     onBack: () -> Unit,
     viewModel: PharmacistViewModel = viewModel()
 ) {
+    val cs    = MaterialTheme.colorScheme
     val scope = rememberCoroutineScope()
+
     var name        by remember { mutableStateOf("") }
     var brand       by remember { mutableStateOf("") }
     var category    by remember { mutableStateOf("") }
@@ -44,51 +45,90 @@ fun AddListingScreen(
     var batch       by remember { mutableStateOf("") }
     var expiry      by remember { mutableStateOf("") }
 
-    val categories = listOf("Antibiotics", "Pain Relief", "Fever", "First Aid", "Vitamins", "Hydration", "Allergy", "Digestive", "Other")
+    val categories = listOf(
+        "Antibiotics", "Pain Relief", "Fever", "First Aid",
+        "Vitamins", "Hydration", "Allergy", "Digestive", "Other"
+    )
     var categoryExpanded by remember { mutableStateOf(false) }
 
-    Column(modifier = Modifier.fillMaxSize().background(Color(0xFFF5F7F5))) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(cs.background)
+    ) {
 
-        // Header
-        Box(modifier = Modifier.fillMaxWidth()
-            .background(Brush.verticalGradient(listOf(PrimaryDark, PrimaryColor)))
-            .padding(top = 48.dp, bottom = 20.dp, start = 4.dp, end = 20.dp)) {
+        // ── Header ────────────────────────────────────────────────
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Brush.verticalGradient(listOf(cs.primaryContainer, cs.primary)))
+                .padding(top = 48.dp, bottom = 20.dp, start = 4.dp, end = 20.dp)
+        ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = onBack) {
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, null, tint = Color.White)
                 }
                 Spacer(Modifier.width(4.dp))
                 Column {
-                    Text("Add New Listing", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                    Text("Fill in medicine details below", color = Color.White.copy(alpha = 0.6f), fontSize = 12.sp)
+                    Text(
+                        "Add New Listing", color = Color.White, fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold, fontFamily = Poppins
+                    )
+                    Text(
+                        "Fill in medicine details below",
+                        color = Color.White.copy(alpha = 0.6f),
+                        fontSize = 12.sp, fontFamily = Poppins
+                    )
                 }
             }
         }
 
-        Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())
-            .padding(horizontal = 16.dp, vertical = 16.dp)) {
+        // ── Form ─────────────────────────────────────────────────
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp, vertical = 16.dp)
+        ) {
 
-            // Medicine Details
+            // Medicine Details section
             SectionLabel("MEDICINE DETAILS")
             AddField("Medicine Name", name, KeyboardType.Text, KeyboardCapitalization.Words) { name = it }
             AddField("Brand", brand, KeyboardType.Text, KeyboardCapitalization.Words) { brand = it }
 
-            // Category dropdown
-            Text("Category", fontSize = 11.sp, letterSpacing = 1.sp, color = Color.Gray,
-                modifier = Modifier.padding(bottom = 6.dp, top = 4.dp))
-            ExposedDropdownMenuBox(expanded = categoryExpanded, onExpandedChange = { categoryExpanded = it }) {
+            // Category dropdown label
+            Text(
+                "CATEGORY", fontSize = 11.sp, letterSpacing = 1.2.sp,
+                fontWeight = FontWeight.Bold,
+                color = cs.onBackground.copy(alpha = 0.4f), fontFamily = Poppins,
+                modifier = Modifier.padding(bottom = 6.dp, top = 4.dp)
+            )
+            ExposedDropdownMenuBox(
+                expanded = categoryExpanded,
+                onExpandedChange = { categoryExpanded = it }
+            ) {
                 OutlinedTextField(
-                    value = category, onValueChange = {},
+                    value = category,
+                    onValueChange = {},
                     modifier = Modifier.fillMaxWidth().menuAnchor(),
-                    readOnly = true, label = { Text("Select category") },
+                    readOnly = true,
+                    label = { Text("Select category", fontFamily = Poppins, fontSize = 13.sp) },
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = categoryExpanded) },
                     shape = RoundedCornerShape(12.dp),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = PrimaryColor, unfocusedBorderColor = Color.Gray.copy(alpha = 0.3f))
+                        focusedBorderColor = cs.primary,
+                        unfocusedBorderColor = cs.onBackground.copy(alpha = 0.2f)
+                    )
                 )
-                ExposedDropdownMenu(expanded = categoryExpanded, onDismissRequest = { categoryExpanded = false }) {
+                ExposedDropdownMenu(
+                    expanded = categoryExpanded,
+                    onDismissRequest = { categoryExpanded = false }
+                ) {
                     categories.forEach { cat ->
-                        DropdownMenuItem(text = { Text(cat) }, onClick = { category = cat; categoryExpanded = false })
+                        DropdownMenuItem(
+                            text = { Text(cat, fontFamily = Poppins) },
+                            onClick = { category = cat; categoryExpanded = false }
+                        )
                     }
                 }
             }
@@ -99,7 +139,7 @@ fun AddListingScreen(
 
             Spacer(Modifier.height(8.dp))
 
-            // Pricing
+            // Pricing section
             SectionLabel("PRICING")
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Column(modifier = Modifier.weight(1f)) {
@@ -112,7 +152,7 @@ fun AddListingScreen(
 
             Spacer(Modifier.height(8.dp))
 
-            // Stock & Batch
+            // Stock & Batch section
             SectionLabel("STOCK & BATCH")
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Column(modifier = Modifier.weight(1f)) {
@@ -147,12 +187,20 @@ fun AddListingScreen(
                 enabled = !viewModel.isSaving && name.isNotBlank() && price.isNotBlank() && stock.isNotBlank(),
                 modifier = Modifier.fillMaxWidth().height(52.dp),
                 shape = RoundedCornerShape(14.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = PrimaryColor)
+                colors = ButtonDefaults.buttonColors(containerColor = cs.primary)
             ) {
                 if (viewModel.isSaving) {
-                    CircularProgressIndicator(color = Color.White, modifier = Modifier.size(22.dp), strokeWidth = 2.dp)
+                    CircularProgressIndicator(
+                        color = cs.onPrimary,
+                        modifier = Modifier.size(22.dp),
+                        strokeWidth = 2.dp
+                    )
                 } else {
-                    Text("Save Listing", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                    Text(
+                        "Save Listing", fontSize = 16.sp,
+                        fontWeight = FontWeight.SemiBold, fontFamily = Poppins,
+                        color = cs.onPrimary
+                    )
                 }
             }
 
@@ -163,8 +211,12 @@ fun AddListingScreen(
 
 @Composable
 private fun SectionLabel(label: String) {
-    Text(label, fontSize = 11.sp, letterSpacing = 1.2.sp, fontWeight = FontWeight.Bold,
-        color = Color.Gray, modifier = Modifier.padding(top = 8.dp, bottom = 10.dp))
+    val cs = MaterialTheme.colorScheme
+    Text(
+        label, fontSize = 11.sp, letterSpacing = 1.2.sp, fontWeight = FontWeight.Bold,
+        color = cs.onBackground.copy(alpha = 0.4f), fontFamily = Poppins,
+        modifier = Modifier.padding(top = 8.dp, bottom = 10.dp)
+    )
 }
 
 @Composable
@@ -175,14 +227,21 @@ private fun AddField(
     capitalization: KeyboardCapitalization = KeyboardCapitalization.None,
     onValueChange: (String) -> Unit
 ) {
+    val cs = MaterialTheme.colorScheme
     OutlinedTextField(
-        value = value, onValueChange = onValueChange,
+        value = value,
+        onValueChange = onValueChange,
         modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp),
-        label = { Text(label, fontSize = 13.sp) },
+        label = { Text(label, fontSize = 13.sp, fontFamily = Poppins) },
         singleLine = true,
-        keyboardOptions = KeyboardOptions(keyboardType = keyboardType, capitalization = capitalization),
+        keyboardOptions = KeyboardOptions(
+            keyboardType = keyboardType,
+            capitalization = capitalization
+        ),
         shape = RoundedCornerShape(12.dp),
         colors = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor = PrimaryColor, unfocusedBorderColor = Color.Gray.copy(alpha = 0.3f))
+            focusedBorderColor = cs.primary,
+            unfocusedBorderColor = cs.onBackground.copy(alpha = 0.2f)
+        )
     )
 }

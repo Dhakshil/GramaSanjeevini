@@ -19,8 +19,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.grama_sanjeevini.R
+import com.example.grama_sanjeevini.constants.theme.Poppins
 import com.example.grama_sanjeevini.constants.theme.PrimaryColor
-import com.example.grama_sanjeevini.constants.theme.SecondaryColor
 import kotlinx.coroutines.delay
 
 @Composable
@@ -75,7 +75,8 @@ fun SplashScreen(onFinished: () -> Unit) {
                 fontSize = 28.sp,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center,
-                letterSpacing = 0.5.sp
+                letterSpacing = 0.5.sp,
+                fontFamily = Poppins
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -87,7 +88,8 @@ fun SplashScreen(onFinished: () -> Unit) {
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Medium,
                 letterSpacing = 2.sp,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
+                fontFamily = Poppins
             )
 
             Spacer(modifier = Modifier.height(64.dp))

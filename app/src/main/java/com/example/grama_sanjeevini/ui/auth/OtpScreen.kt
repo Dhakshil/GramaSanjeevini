@@ -9,8 +9,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -27,9 +25,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.grama_sanjeevini.constants.theme.PrimaryColor
-import com.example.grama_sanjeevini.constants.theme.PrimaryLight
-import com.example.grama_sanjeevini.constants.theme.SurfaceWhite
+import com.example.grama_sanjeevini.constants.theme.Poppins
 import com.google.firebase.FirebaseException
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
@@ -39,14 +35,13 @@ import com.google.firebase.auth.PhoneAuthProvider
 import kotlinx.coroutines.delay
 import java.util.concurrent.TimeUnit
 
-
-
-
 @Composable
 fun OtpScreen(
     phone: String,
     onOtpVerified: (FirebaseUser) -> Unit
 ) {
+    val cs = MaterialTheme.colorScheme
+
     // ── State ─────────────────────────────────────────────────────
     var otpValue       by remember { mutableStateOf("") }
     var isLoading      by remember { mutableStateOf(false) }
@@ -58,11 +53,9 @@ fun OtpScreen(
     val focusRequester = remember { FocusRequester() }
     val auth           = remember { FirebaseAuth.getInstance() }
 
-    // ── Grab Activity (needed by Firebase Phone Auth) ─────────────
     val context  = LocalContext.current
     val activity = context as ComponentActivity
 
-    // ── Helper: sign in with credential ──────────────────────────
     fun signInWithCredential(credential: PhoneAuthCredential) {
         isLoading = true
         errorMessage = ""
@@ -78,45 +71,32 @@ fun OtpScreen(
             }
     }
 
-    // ── Helper: send OTP via Firebase ─────────────────────────────
     fun sendOtp() {
         val options = PhoneAuthOptions.newBuilder(auth)
             .setPhoneNumber("+91$phone")
             .setTimeout(60L, TimeUnit.SECONDS)
-            .setActivity(activity)                        // <– Activity goes here
+            .setActivity(activity)
             .setCallbacks(object : PhoneAuthProvider.OnVerificationStateChangedCallbacks() {
-
-                // Auto-verified (some devices skip OTP entry)
                 override fun onVerificationCompleted(credential: PhoneAuthCredential) {
                     signInWithCredential(credential)
                 }
-
-                // Firebase rejected the request
                 override fun onVerificationFailed(e: FirebaseException) {
                     errorMessage = e.message ?: "Failed to send OTP"
                 }
-
-                // OTP sent — store the verificationId for manual entry
-                override fun onCodeSent(
-                    id: String,
-                    token: PhoneAuthProvider.ForceResendingToken
-                ) {
+                override fun onCodeSent(id: String, token: PhoneAuthProvider.ForceResendingToken) {
                     verificationId = id
                 }
             })
             .build()
-
         PhoneAuthProvider.verifyPhoneNumber(options)
     }
 
-    // ── Send OTP on first load ────────────────────────────────────
     LaunchedEffect(phone) {
         sendOtp()
         delay(500)
         focusRequester.requestFocus()
     }
 
-    // ── Countdown timer for Resend button ─────────────────────────
     LaunchedEffect(Unit) {
         while (resendTimer > 0) {
             delay(1000L)
@@ -125,7 +105,6 @@ fun OtpScreen(
         canResend = true
     }
 
-    // ── Auto-submit when all 6 digits entered ─────────────────────
     LaunchedEffect(otpValue) {
         if (otpValue.length == 6 && verificationId.isNotEmpty()) {
             val credential = PhoneAuthProvider.getCredential(verificationId, otpValue)
@@ -136,11 +115,11 @@ fun OtpScreen(
     // ── UI ────────────────────────────────────────────────────────
     Column(modifier = Modifier.fillMaxSize()) {
 
-        // Green header
+        // Gradient header
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(PrimaryColor)
+                .background(cs.primaryContainer)
                 .padding(top = 48.dp, bottom = 32.dp, start = 16.dp, end = 16.dp)
         ) {
             Column(
@@ -151,22 +130,24 @@ fun OtpScreen(
                     "Verify Number",
                     color = Color.White,
                     fontSize = 22.sp,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = Poppins
                 )
                 Spacer(Modifier.height(4.dp))
                 Text(
                     "+91 $phone",
                     color = Color.White.copy(alpha = 0.7f),
-                    fontSize = 14.sp
+                    fontSize = 14.sp,
+                    fontFamily = Poppins
                 )
             }
         }
 
-        // White card
+        // Card
         Surface(
             modifier = Modifier.fillMaxSize(),
             shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-            color = MaterialTheme.colorScheme.background
+            color = cs.background
         ) {
             Column(
                 modifier = Modifier
@@ -178,18 +159,19 @@ fun OtpScreen(
                     "Enter the 6-digit code",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground
+                    color = cs.onBackground,
+                    fontFamily = Poppins
                 )
                 Spacer(Modifier.height(8.dp))
                 Text(
                     "Sent to your mobile number via SMS",
                     fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f)
+                    color = cs.onBackground.copy(alpha = 0.5f),
+                    fontFamily = Poppins
                 )
 
                 Spacer(Modifier.height(40.dp))
 
-                // 6-box OTP input
                 OtpInputRow(
                     otpValue = otpValue,
                     onValueChange = {
@@ -207,15 +189,15 @@ fun OtpScreen(
                 if (errorMessage.isNotEmpty()) {
                     Text(
                         errorMessage,
-                        color = MaterialTheme.colorScheme.error,
+                        color = cs.error,
                         fontSize = 13.sp,
-                        textAlign = TextAlign.Center
+                        textAlign = TextAlign.Center,
+                        fontFamily = Poppins
                     )
                 }
 
                 Spacer(Modifier.height(32.dp))
 
-                // Verify button
                 Button(
                     onClick = {
                         if (otpValue.length == 6 && verificationId.isNotEmpty()) {
@@ -224,15 +206,13 @@ fun OtpScreen(
                         }
                     },
                     enabled = otpValue.length == 6 && !isLoading,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(52.dp),
+                    modifier = Modifier.fillMaxWidth().height(52.dp),
                     shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryColor)
+                    colors = ButtonDefaults.buttonColors(containerColor = cs.primary)
                 ) {
                     if (isLoading) {
                         CircularProgressIndicator(
-                            color = Color.White,
+                            color = cs.onPrimary,
                             modifier = Modifier.size(22.dp),
                             strokeWidth = 2.dp
                         )
@@ -240,19 +220,21 @@ fun OtpScreen(
                         Text(
                             "Verify & Continue",
                             fontSize = 16.sp,
-                            fontWeight = FontWeight.SemiBold
+                            fontWeight = FontWeight.SemiBold,
+                            fontFamily = Poppins,
+                            color = cs.onPrimary
                         )
                     }
                 }
 
                 Spacer(Modifier.height(24.dp))
 
-                // Resend row
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         "Didn't receive the code? ",
                         fontSize = 14.sp,
-                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f)
+                        color = cs.onBackground.copy(alpha = 0.5f),
+                        fontFamily = Poppins
                     )
                     if (canResend) {
                         TextButton(onClick = {
@@ -262,18 +244,15 @@ fun OtpScreen(
                             errorMessage = ""
                             sendOtp()
                         }) {
-                            Text(
-                                "Resend",
-                                color = PrimaryColor,
-                                fontWeight = FontWeight.SemiBold
-                            )
+                            Text("Resend", color = cs.primary, fontWeight = FontWeight.SemiBold, fontFamily = Poppins)
                         }
                     } else {
                         Text(
                             "Resend in ${resendTimer}s",
                             fontSize = 14.sp,
-                            color = PrimaryColor,
-                            fontWeight = FontWeight.Medium
+                            color = cs.primary,
+                            fontWeight = FontWeight.Medium,
+                            fontFamily = Poppins
                         )
                     }
                 }
@@ -290,26 +269,26 @@ private fun OtpInputRow(
     focusRequester: FocusRequester,
     isError: Boolean
 ) {
+    val cs = MaterialTheme.colorScheme
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier.clickable { focusRequester.requestFocus() }
     ) {
-        // 6 visible boxes driven by otpValue
         Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
             repeat(6) { index ->
                 val char      = otpValue.getOrNull(index)
                 val isFocused = otpValue.length == index
 
                 val borderColor = when {
-                    isError   -> MaterialTheme.colorScheme.error
-                    isFocused -> PrimaryColor
-                    char != null -> PrimaryColor.copy(alpha = 0.5f)
-                    else      -> Color.Gray.copy(alpha = 0.3f)
+                    isError      -> cs.error
+                    isFocused    -> cs.primary
+                    char != null -> cs.primary.copy(alpha = 0.5f)
+                    else         -> cs.onBackground.copy(alpha = 0.25f)
                 }
                 val bgColor = when {
-                    isError      -> MaterialTheme.colorScheme.error.copy(alpha = 0.05f)
-                    char != null -> SurfaceWhite
-                    else         -> MaterialTheme.colorScheme.surface
+                    isError      -> cs.error.copy(alpha = 0.05f)
+                    char != null -> cs.surface
+                    else         -> cs.surface
                 }
 
                 Box(
@@ -329,7 +308,8 @@ private fun OtpInputRow(
                             text = char.toString(),
                             fontSize = 24.sp,
                             fontWeight = FontWeight.Bold,
-                            color = PrimaryColor
+                            color = cs.primary,
+                            fontFamily = Poppins
                         )
                     } else if (isFocused) {
                         val alpha by animateFloatAsState(1f, label = "cursor")
@@ -337,18 +317,18 @@ private fun OtpInputRow(
                             modifier = Modifier
                                 .width(2.dp)
                                 .height(28.dp)
-                                .background(PrimaryColor.copy(alpha = alpha))
+                                .background(cs.primary.copy(alpha = alpha))
                         )
                     }
                 }
             }
         }
 
-        // Hidden TextField that captures focus and keyboard input
         BasicTextField(
             value = otpValue,
             onValueChange = onValueChange,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            cursorBrush = SolidColor(cs.primary),
             modifier = Modifier
                 .focusRequester(focusRequester)
                 .matchParentSize()

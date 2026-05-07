@@ -7,11 +7,11 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.grama_sanjeevini.R
-import com.example.grama_sanjeevini.constants.theme.PrimaryColor
+import com.example.grama_sanjeevini.constants.theme.Poppins
 
 sealed class BottomNavItem(val route: String, val label: String, val iconRes: Int) {
     object Home   : BottomNavItem("home",    "Home",    R.drawable.ic_home)
@@ -26,9 +26,10 @@ fun BottomNavBar(
     currentRoute: String?,
     onNavigate: (String) -> Unit
 ) {
+    val cs = MaterialTheme.colorScheme
     NavigationBar(
-        containerColor = Color.White,
-        tonalElevation = androidx.compose.ui.unit.Dp(8f)
+        containerColor = cs.surface,
+        tonalElevation = 8.dp
     ) {
         bottomNavItems.forEach { item ->
             val selected = currentRoute == item.route
@@ -46,14 +47,14 @@ fun BottomNavBar(
                     )
                 },
                 label = {
-                    Text(item.label, fontSize = 11.sp)
+                    Text(item.label, fontSize = 11.sp, fontFamily = Poppins)
                 },
                 colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor   = PrimaryColor,
-                    selectedTextColor   = PrimaryColor,
-                    indicatorColor      = PrimaryColor.copy(alpha = 0.12f),
-                    unselectedIconColor = Color.Gray,
-                    unselectedTextColor = Color.Gray
+                    selectedIconColor   = cs.primary,
+                    selectedTextColor   = cs.primary,
+                    indicatorColor      = cs.primary.copy(alpha = 0.12f),
+                    unselectedIconColor = cs.onBackground.copy(alpha = 0.4f),
+                    unselectedTextColor = cs.onBackground.copy(alpha = 0.4f)
                 )
             )
         }
