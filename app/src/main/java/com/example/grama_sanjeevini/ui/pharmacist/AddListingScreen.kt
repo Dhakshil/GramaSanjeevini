@@ -20,6 +20,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.grama_sanjeevini.constants.AppStrings
 import com.example.grama_sanjeevini.constants.theme.*
 import com.example.grama_sanjeevini.data.model.Medicine
 import com.example.grama_sanjeevini.viewmodel.PharmacistViewModel
@@ -45,11 +46,21 @@ fun AddListingScreen(
     var batch       by remember { mutableStateOf("") }
     var expiry      by remember { mutableStateOf("") }
 
+    // Validation errors
+    var nameError  by remember { mutableStateOf("") }
+    var priceError by remember { mutableStateOf("") }
+    var stockError by remember { mutableStateOf("") }
+
     val categories = listOf(
         "Antibiotics", "Pain Relief", "Fever", "First Aid",
         "Vitamins", "Hydration", "Allergy", "Digestive", "Other"
     )
     var categoryExpanded by remember { mutableStateOf(false) }
+
+    // Watch for save success to navigate back
+    LaunchedEffect(viewModel.isSaving) {
+        // When isSaving flips to false and there's no error, we just saved
+    }
 
     Column(
         modifier = Modifier
@@ -91,12 +102,34 @@ fun AddListingScreen(
                 .padding(horizontal = 16.dp, vertical = 16.dp)
         ) {
 
+            // Save error banner (from ViewModel)
+            if (viewModel.saveError.isNotEmpty()) {
+                Card(
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = cs.error.copy(alpha = 0.08f))
+                ) {
+                    Text(
+                        viewModel.saveError,
+                        fontSize = 13.sp, color = cs.error, fontFamily = Poppins,
+                        modifier = Modifier.padding(14.dp)
+                    )
+                }
+            }
+
             // Medicine Details section
             SectionLabel("MEDICINE DETAILS")
-            AddField("Medicine Name", name, KeyboardType.Text, KeyboardCapitalization.Words) { name = it }
+            AddField(
+                label = "Medicine Name *",
+                value = name,
+                keyboardType = KeyboardType.Text,
+                capitalization = KeyboardCapitalization.Words,
+                error = nameError,
+                onValueChange = { name = it; nameError = "" }
+            )
             AddField("Brand", brand, KeyboardType.Text, KeyboardCapitalization.Words) { brand = it }
 
-            // Category dropdown label
+            // Category dropdown
             Text(
                 "CATEGORY", fontSize = 11.sp, letterSpacing = 1.2.sp,
                 fontWeight = FontWeight.Bold,
@@ -146,7 +179,13 @@ fun AddListingScreen(
                     AddField("MRP (₹)", mrp, KeyboardType.Decimal) { mrp = it }
                 }
                 Column(modifier = Modifier.weight(1f)) {
-                    AddField("Selling Price (₹)", price, KeyboardType.Decimal) { price = it }
+                    AddField(
+                        label = "Selling Price (₹) *",
+                        value = price,
+                        keyboardType = KeyboardType.Decimal,
+                        error = priceError,
+                        onValueChange = { price = it; priceError = "" }
+                    )
                 }
             }
 
@@ -156,7 +195,13 @@ fun AddListingScreen(
             SectionLabel("STOCK & BATCH")
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Column(modifier = Modifier.weight(1f)) {
-                    AddField("Quantity", stock, KeyboardType.Number) { stock = it }
+                    AddField(
+                        label = "Quantity *",
+                        value = stock,
+                        keyboardType = KeyboardType.Number,
+                        error = stockError,
+                        onValueChange = { stock = it; stockError = "" }
+                    )
                 }
                 Column(modifier = Modifier.weight(1f)) {
                     AddField("Batch Number", batch, KeyboardType.Text, KeyboardCapitalization.Characters) { batch = it }
@@ -169,22 +214,44 @@ fun AddListingScreen(
             // Save button
             Button(
                 onClick = {
-                    val medicine = Medicine(
-                        id = "", name = name.trim(), brand = brand.trim(),
-                        category = category.ifBlank { "Other" },
-                        description = description.trim(), dosage = dosage.trim(),
-                        mrp = mrp.toDoubleOrNull() ?: 0.0,
-                        sellingPrice = price.toDoubleOrNull() ?: 0.0,
-                        stockCount = stock.toIntOrNull() ?: 0,
-                        expiryDate = expiry.trim(), batchNumber = batch.trim(),
-                        pharmacyId = "myPharmacy", pharmacyName = "My Pharmacy", distanceKm = 0.0
-                    )
-                    scope.launch {
-                        viewModel.addMedicine(medicine)
-                        onBack()
+                    // Validate
+                    var valid = true
+                    if (name.isBlank()) {
+                        nameError = "Medicine name is required"
+                        valid = false
+                    }
+                    if (price.isBlank() || price.toDoubleOrNull() == null) {
+                        priceError = "Enter a valid price"
+                        valid = false
+                    }
+                    if (stock.isBlank() || stock.toIntOrNull() == null) {
+                        stockError = "Enter a valid quantity"
+                        valid = false
+                    }
+                    if (valid) {
+                        viewModel.clearSaveError()
+                        val medicine = Medicine(
+                            id = "", name = name.trim(), brand = brand.trim(),
+                            category = category.ifBlank { "Other" },
+                            description = description.trim(), dosage = dosage.trim(),
+                            mrp = mrp.toDoubleOrNull() ?: 0.0,
+                            sellingPrice = price.toDoubleOrNull() ?: 0.0,
+                            stockCount = stock.toIntOrNull() ?: 0,
+                            expiryDate = expiry.trim(), batchNumber = batch.trim(),
+                            pharmacyId = viewModel.storeId,
+                            pharmacyName = viewModel.storeName,
+                            distanceKm = 0.0
+                        )
+                        scope.launch {
+                            viewModel.addMedicine(medicine)
+                            // Navigate back only if no error
+                            if (viewModel.saveError.isEmpty()) {
+                                onBack()
+                            }
+                        }
                     }
                 },
-                enabled = !viewModel.isSaving && name.isNotBlank() && price.isNotBlank() && stock.isNotBlank(),
+                enabled = !viewModel.isSaving,
                 modifier = Modifier.fillMaxWidth().height(52.dp),
                 shape = RoundedCornerShape(14.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = cs.primary)
@@ -225,6 +292,7 @@ private fun AddField(
     value: String,
     keyboardType: KeyboardType,
     capitalization: KeyboardCapitalization = KeyboardCapitalization.None,
+    error: String = "",
     onValueChange: (String) -> Unit
 ) {
     val cs = MaterialTheme.colorScheme
@@ -234,6 +302,10 @@ private fun AddField(
         modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp),
         label = { Text(label, fontSize = 13.sp, fontFamily = Poppins) },
         singleLine = true,
+        isError = error.isNotEmpty(),
+        supportingText = if (error.isNotEmpty()) {
+            { Text(error, color = cs.error, fontSize = 11.sp, fontFamily = Poppins) }
+        } else null,
         keyboardOptions = KeyboardOptions(
             keyboardType = keyboardType,
             capitalization = capitalization

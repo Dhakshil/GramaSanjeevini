@@ -312,7 +312,7 @@ private fun RegisterRoleChip(
     ) {
         Icon(
             painter = painterResource(
-                if (role == UserRole.CUSTOMER) R.drawable.ic_person
+                if (role == UserRole.CUSTOMER) R.drawable.profile
                 else R.drawable.ic_medical_services
             ),
             contentDescription = null,

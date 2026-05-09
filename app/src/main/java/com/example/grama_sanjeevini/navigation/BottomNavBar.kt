@@ -1,5 +1,6 @@
 package com.example.grama_sanjeevini.navigation
 
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -12,11 +13,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.grama_sanjeevini.R
 import com.example.grama_sanjeevini.constants.theme.Poppins
+import androidx.compose.ui.Modifier
 
 sealed class BottomNavItem(val route: String, val label: String, val iconRes: Int) {
-    object Home   : BottomNavItem("home",    "Home",    R.drawable.ic_home)
+    object Home   : BottomNavItem("home",    "Home",    R.drawable.home)
     object Search : BottomNavItem("search",  "Search",  R.drawable.ic_search)
-    object Profile: BottomNavItem("profile", "Profile", R.drawable.ic_account)
+    object Profile: BottomNavItem("profile", "Profile", R.drawable.profile)
 }
 
 val bottomNavItems = listOf(BottomNavItem.Home, BottomNavItem.Search, BottomNavItem.Profile)
@@ -43,7 +45,8 @@ fun BottomNavBar(
                 icon = {
                     Icon(
                         painter = painterResource(item.iconRes),
-                        contentDescription = item.label
+                        contentDescription = item.label,
+                        modifier = Modifier.size(24.dp)
                     )
                 },
                 label = {

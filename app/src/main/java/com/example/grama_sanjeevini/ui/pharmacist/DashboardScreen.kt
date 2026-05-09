@@ -11,10 +11,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.grama_sanjeevini.R
 import com.example.grama_sanjeevini.constants.theme.*
 import com.example.grama_sanjeevini.data.model.Medicine
 import com.example.grama_sanjeevini.viewmodel.PharmacistViewModel
@@ -27,6 +29,13 @@ fun DashboardScreen(
 ) {
     val cs = MaterialTheme.colorScheme
 
+    if (viewModel.storeLoading) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator(color = cs.primary)
+        }
+        return
+    }
+
     LazyColumn(
         modifier = Modifier.fillMaxSize().background(cs.background),
         contentPadding = PaddingValues(bottom = 24.dp)
@@ -37,7 +46,7 @@ fun DashboardScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(Brush.verticalGradient(listOf(cs.primaryContainer, cs.primary)))
-                    .padding(top = 52.dp, bottom = 28.dp, start = 20.dp, end = 20.dp)
+                    .padding(top = 48.dp, bottom = 24.dp, start = 20.dp, end = 20.dp)
             ) {
                 Column {
                     Text(
@@ -47,7 +56,7 @@ fun DashboardScreen(
                     )
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        "My Store",
+                        viewModel.storeName,
                         color = Color.White, fontSize = 22.sp,
                         fontWeight = FontWeight.Bold, fontFamily = Poppins
                     )
@@ -60,6 +69,21 @@ fun DashboardScreen(
                             fontSize = 13.sp, fontFamily = Poppins
                         )
                     }
+                    // Store error
+                    if (viewModel.storeError.isNotEmpty()) {
+                        Spacer(Modifier.height(8.dp))
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = cs.error.copy(alpha = 0.15f)
+                        ) {
+                            Text(
+                                viewModel.storeError,
+                                color = Color.White.copy(alpha = 0.9f),
+                                fontSize = 12.sp, fontFamily = Poppins,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -71,19 +95,57 @@ fun DashboardScreen(
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 MetricCard(
-                    label = "Total Items",
-                    value = viewModel.totalItems.toString(),
-                    emoji = "📦",
+                    label       = "Total Items",
+                    value       = viewModel.totalItems.toString(),
+                    iconRes     = R.drawable.ic_inventory,
                     accentColor = cs.primary,
-                    modifier = Modifier.weight(1f)
+                    modifier    = Modifier.weight(1f)
                 )
                 MetricCard(
-                    label = "Low Stock",
-                    value = viewModel.lowStockCount.toString(),
-                    emoji = "⚠️",
+                    label       = "Low Stock",
+                    value       = viewModel.lowStockCount.toString(),
+                    iconRes     = R.drawable.ic_info,
                     accentColor = WarningColor,
-                    modifier = Modifier.weight(1f)
+                    modifier    = Modifier.weight(1f)
                 )
+                MetricCard(
+                    label       = "Pending Rx",
+                    value       = viewModel.prescriptions.count { it.status == "pending" }.toString(),
+                    iconRes     = R.drawable.ic_prescription,
+                    accentColor = cs.tertiary,
+                    modifier    = Modifier.weight(1f)
+                )
+            }
+        }
+
+        // ── Save error banner ─────────────────────────────────────
+        if (viewModel.saveError.isNotEmpty()) {
+            item {
+                Card(
+                    modifier = Modifier
+                        .padding(horizontal = 16.dp, vertical = 4.dp)
+                        .fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = cs.error.copy(alpha = 0.08f))
+                ) {
+                    Row(
+                        modifier = Modifier.padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_info),
+                            contentDescription = null,
+                            tint = cs.error,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(Modifier.width(10.dp))
+                        Text(
+                            viewModel.saveError,
+                            fontSize = 13.sp, color = cs.error, fontFamily = Poppins,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
             }
         }
 
@@ -94,10 +156,19 @@ fun DashboardScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    "Inventory", fontSize = 17.sp, fontWeight = FontWeight.Bold,
-                    color = cs.onBackground, fontFamily = Poppins
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_inventory),
+                        contentDescription = null,
+                        tint = cs.onBackground.copy(alpha = 0.6f),
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        "Inventory", fontSize = 17.sp, fontWeight = FontWeight.Bold,
+                        color = cs.onBackground, fontFamily = Poppins
+                    )
+                }
                 Button(
                     onClick = onAddListing,
                     shape = RoundedCornerShape(10.dp),
@@ -120,11 +191,26 @@ fun DashboardScreen(
                     modifier = Modifier.fillMaxWidth().padding(40.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        "No inventory yet. Tap '+ Add New' to begin.",
-                        color = cs.onBackground.copy(alpha = 0.4f),
-                        fontSize = 14.sp, fontFamily = Poppins
-                    )
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_inventory),
+                            contentDescription = null,
+                            tint = cs.onBackground.copy(alpha = 0.2f),
+                            modifier = Modifier.size(48.dp)
+                        )
+                        Spacer(Modifier.height(10.dp))
+                        Text(
+                            "No inventory yet.",
+                            color = cs.onBackground.copy(alpha = 0.5f),
+                            fontSize = 14.sp, fontFamily = Poppins,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Text(
+                            "Tap '+ Add New' to add your first medicine.",
+                            color = cs.onBackground.copy(alpha = 0.35f),
+                            fontSize = 12.sp, fontFamily = Poppins
+                        )
+                    }
                 }
             }
         } else {
@@ -142,7 +228,7 @@ fun DashboardScreen(
 private fun MetricCard(
     label: String,
     value: String,
-    emoji: String,
+    iconRes: Int,
     accentColor: Color,
     modifier: Modifier = Modifier
 ) {
@@ -153,23 +239,34 @@ private fun MetricCard(
         colors = CardDefaults.cardColors(containerColor = cs.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(14.dp)) {
             Row(
                 horizontalArrangement = Arrangement.SpaceBetween,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(emoji, fontSize = 26.sp)
-                Surface(shape = RoundedCornerShape(8.dp), color = accentColor.copy(alpha = 0.1f)) {
-                    Text(
-                        value, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold,
-                        color = accentColor, fontFamily = Poppins,
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                    )
+                Surface(
+                    shape = RoundedCornerShape(10.dp),
+                    color = accentColor.copy(alpha = 0.1f),
+                    modifier = Modifier.size(36.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            painter = painterResource(iconRes),
+                            contentDescription = null,
+                            tint = accentColor,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
                 }
+                Text(
+                    value, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold,
+                    color = accentColor, fontFamily = Poppins
+                )
             }
             Spacer(Modifier.height(8.dp))
             Text(
-                label, fontSize = 13.sp, color = cs.onBackground.copy(alpha = 0.5f),
+                label, fontSize = 12.sp, color = cs.onBackground.copy(alpha = 0.5f),
                 fontWeight = FontWeight.Medium, fontFamily = Poppins
             )
         }
@@ -196,7 +293,12 @@ private fun InventoryRow(medicine: Medicine, modifier: Modifier = Modifier) {
                 modifier = Modifier.size(44.dp)
             ) {
                 Box(contentAlignment = Alignment.Center) {
-                    Text("💊", fontSize = 22.sp)
+                    Icon(
+                        painter = painterResource(R.drawable.ic_pills),
+                        contentDescription = null,
+                        tint = cs.primary,
+                        modifier = Modifier.size(24.dp)
+                    )
                 }
             }
             Spacer(Modifier.width(12.dp))

@@ -1,22 +1,29 @@
 package com.example.grama_sanjeevini.viewmodel
 
 import android.app.Application
+import android.net.Uri
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.grama_sanjeevini.constants.AppStrings
 import com.example.grama_sanjeevini.data.model.Medicine
 import com.example.grama_sanjeevini.data.model.Pharmacy
 import com.example.grama_sanjeevini.data.repository.LocationRepository
 import com.example.grama_sanjeevini.data.repository.PharmacyRepository
+import com.example.grama_sanjeevini.data.repository.PrescriptionRepository
 import com.example.grama_sanjeevini.data.repository.UserLocation
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
 class HomeViewModel(app: Application) : AndroidViewModel(app) {
 
-    private val locationRepo  = LocationRepository(app.applicationContext)
-    private val pharmacyRepo  = PharmacyRepository()
+    private val locationRepo     = LocationRepository(app.applicationContext)
+    private val pharmacyRepo     = PharmacyRepository()
+    private val prescriptionRepo = PrescriptionRepository()
 
     // ── Location state ─────────────────────────────────────────────────────────
     var userLocation by mutableStateOf<UserLocation?>(null)
@@ -27,6 +34,17 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
     // ── Pharmacy loading state ──────────────────────────────────────────────────
     var pharmaciesLoading by mutableStateOf(false)
         private set
+
+    // ── Upload state ────────────────────────────────────────────────────────────
+    var uploadState by mutableStateOf<UploadState>(UploadState.Idle)
+        private set
+
+    sealed class UploadState {
+        object Idle      : UploadState()
+        object Uploading : UploadState()
+        data class Success(val url: String) : UploadState()
+        data class Error(val message: String) : UploadState()
+    }
 
     // Hardcoded coordinates for demo/fallback pharmacies (Bengaluru area)
     private val pharmacyCoords = mapOf(
@@ -95,6 +113,9 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
 
     fun getPharmacyById(id: String): Pharmacy? = pharmacies.find { it.id == id }
 
+    /** The nearest pharmacy ID used as the upload target */
+    val nearestPharmacyId: String get() = pharmacies.firstOrNull()?.id ?: ""
+
     /** Called from UI once location permission is granted */
     fun fetchLocation() {
         if (locationLoading || userLocation != null) return
@@ -160,5 +181,50 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
                 meds.filter { it.pharmacyId == "p3" },
                 pharmacyCoords["p3"]!!.first, pharmacyCoords["p3"]!!.second)
         ).sortedBy { it.distanceKm }  // nearest first
+    }
+
+    // ── Prescription upload ─────────────────────────────────────────────────────
+
+    /**
+     * Upload a prescription image to Firebase Storage and save it in Firestore,
+     * linked to the currently nearest pharmacy.
+     */
+    fun uploadReceipt(imageUri: Uri) {
+        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+        val targetPharmacyId = nearestPharmacyId
+        if (targetPharmacyId.isEmpty()) {
+            uploadState = UploadState.Error(AppStrings.ERR_UPLOAD_FAILED)
+            return
+        }
+
+        viewModelScope.launch {
+            uploadState = UploadState.Uploading
+            try {
+                // Fetch user's display name from Firestore
+                val userDoc = FirebaseFirestore.getInstance()
+                    .collection("users").document(uid).get().await()
+                val userName = userDoc.getString("name") ?: "User"
+
+                prescriptionRepo.uploadPrescription(
+                    imageUri         = imageUri,
+                    nearestPharmacyId = targetPharmacyId,
+                    userName         = userName
+                )
+                uploadState = UploadState.Success(AppStrings.INFO_RECEIPT_UPLOADED)
+            } catch (e: Exception) {
+                val msg = e.message?.lowercase() ?: ""
+                uploadState = UploadState.Error(
+                    when {
+                        msg.contains("network") || msg.contains("timeout") -> AppStrings.ERR_NETWORK
+                        msg.contains("size") || msg.contains("quota")      -> AppStrings.ERR_FILE_TOO_LARGE
+                        else -> AppStrings.ERR_UPLOAD_FAILED
+                    }
+                )
+            }
+        }
+    }
+
+    fun clearUploadState() {
+        uploadState = UploadState.Idle
     }
 }

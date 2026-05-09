@@ -25,9 +25,12 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.grama_sanjeevini.constants.AppStrings
 import com.example.grama_sanjeevini.constants.theme.Poppins
 import com.google.firebase.FirebaseException
+import com.google.firebase.FirebaseNetworkException
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.PhoneAuthCredential
 import com.google.firebase.auth.PhoneAuthOptions
@@ -56,6 +59,22 @@ fun OtpScreen(
     val context  = LocalContext.current
     val activity = context as ComponentActivity
 
+    /** Map raw Firebase exceptions to user-friendly AppStrings */
+    fun mapFirebaseError(e: Exception): String = when (e) {
+        is FirebaseNetworkException -> AppStrings.ERR_NETWORK
+        is FirebaseAuthInvalidCredentialsException -> AppStrings.ERR_OTP_INVALID
+        else -> {
+            val msg = e.message?.lowercase() ?: ""
+            when {
+                msg.contains("network") || msg.contains("timeout") -> AppStrings.ERR_NETWORK
+                msg.contains("quota") || msg.contains("too many")  -> AppStrings.ERR_OTP_TOO_MANY_REQUESTS
+                msg.contains("expired")                            -> AppStrings.ERR_OTP_EXPIRED
+                msg.contains("credential") || msg.contains("invalid") -> AppStrings.ERR_OTP_INVALID
+                else -> AppStrings.ERR_OTP_SEND_FAILED
+            }
+        }
+    }
+
     fun signInWithCredential(credential: PhoneAuthCredential) {
         isLoading = true
         errorMessage = ""
@@ -64,10 +83,14 @@ fun OtpScreen(
                 isLoading = false
                 result.user?.let { onOtpVerified(it) }
             }
-            .addOnFailureListener {
+            .addOnFailureListener { e ->
                 isLoading = false
                 otpValue = ""
-                errorMessage = "Invalid OTP. Please try again."
+                errorMessage = when (e) {
+                    is FirebaseAuthInvalidCredentialsException -> AppStrings.ERR_OTP_INVALID
+                    is FirebaseNetworkException                -> AppStrings.ERR_NETWORK
+                    else -> AppStrings.ERR_OTP_INVALID
+                }
             }
     }
 
@@ -81,10 +104,11 @@ fun OtpScreen(
                     signInWithCredential(credential)
                 }
                 override fun onVerificationFailed(e: FirebaseException) {
-                    errorMessage = e.message ?: "Failed to send OTP"
+                    errorMessage = mapFirebaseError(e)
                 }
                 override fun onCodeSent(id: String, token: PhoneAuthProvider.ForceResendingToken) {
                     verificationId = id
+                    errorMessage = ""
                 }
             })
             .build()
@@ -94,7 +118,7 @@ fun OtpScreen(
     LaunchedEffect(phone) {
         sendOtp()
         delay(500)
-        focusRequester.requestFocus()
+        try { focusRequester.requestFocus() } catch (_: Exception) {}
     }
 
     LaunchedEffect(Unit) {
@@ -244,7 +268,12 @@ fun OtpScreen(
                             errorMessage = ""
                             sendOtp()
                         }) {
-                            Text("Resend", color = cs.primary, fontWeight = FontWeight.SemiBold, fontFamily = Poppins)
+                            Text(
+                                "Resend",
+                                color = cs.primary,
+                                fontWeight = FontWeight.SemiBold,
+                                fontFamily = Poppins
+                            )
                         }
                     } else {
                         Text(
@@ -274,7 +303,7 @@ private fun OtpInputRow(
         contentAlignment = Alignment.Center,
         modifier = Modifier.clickable { focusRequester.requestFocus() }
     ) {
-        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             repeat(6) { index ->
                 val char      = otpValue.getOrNull(index)
                 val isFocused = otpValue.length == index
@@ -293,7 +322,7 @@ private fun OtpInputRow(
 
                 Box(
                     modifier = Modifier
-                        .size(44.dp)
+                        .size(46.dp)
                         .clip(RoundedCornerShape(12.dp))
                         .background(bgColor)
                         .border(
