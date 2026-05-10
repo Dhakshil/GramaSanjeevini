@@ -138,7 +138,7 @@ private suspend fun resolveStartDestination(): String {
             FirebaseAuth.getInstance().signOut()
             "login"
         } else {
-            when (doc.getString("role")) {
+            when (doc.getString("role")?.uppercase()) {
                 "PHARMACIST" -> "pharmacist_main"
                 else         -> "customer_main"
             }

@@ -63,7 +63,7 @@ class AuthViewModel : ViewModel() {
                 val doc = firestore.collection("users")
                     .document(user.uid).get().await()
                 if (doc.exists()) {
-                    val savedRole = when (doc.getString("role")) {
+                    val savedRole = when (doc.getString("role")?.uppercase()) {
                         "PHARMACIST" -> UserRole.PHARMACIST
                         else         -> UserRole.CUSTOMER
                     }

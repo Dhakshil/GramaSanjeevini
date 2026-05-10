@@ -115,14 +115,19 @@ fun NavGraph(
             )
             val isNewUser = backStackEntry.arguments?.getString("isNewUser").toBoolean()
 
+            // Guard against double navigation from rapid state changes
+            var hasNavigated by remember { mutableStateOf(false) }
+
             // React to auth state changes
             LaunchedEffect(authViewModel.authState) {
+                if (hasNavigated) return@LaunchedEffect
                 when (val state = authViewModel.authState) {
                     is AuthViewModel.AuthState.Success -> {
+                        hasNavigated = true
                         val dest = if (state.role == UserRole.PHARMACIST)
                             Screen.PharmacistMain.route else Screen.CustomerMain.route
                         navController.navigate(dest) {
-                            popUpTo(Screen.Login.route) { inclusive = true }
+                            popUpTo(0) { inclusive = true }
                         }
                     }
                     is AuthViewModel.AuthState.UserNotFound -> {
@@ -130,6 +135,7 @@ fun NavGraph(
                         showUserNotFoundDialog = true
                     }
                     is AuthViewModel.AuthState.AlreadyExists -> {
+                        hasNavigated = true
                         navController.navigate(Screen.Login.route) {
                             popUpTo(Screen.Otp.route) { inclusive = true }
                         }
